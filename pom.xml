@@ -15,8 +15,12 @@
 	<description>Demo project for Spring Boot</description>
 
 	<properties>
+		<commons-io.version>2.4</commons-io.version>
 		<java.version>1.8</java.version>
 		<swagger.version>2.4.0</swagger.version>
+		<httpmime.version>4.5.3</httpmime.version>
+		<commons-httpclient.version>3.1</commons-httpclient.version>
+		<commons-collections4.version>4.1</commons-collections4.version>
 	</properties>
 
 	<dependencies>
@@ -63,6 +67,38 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>${httpclient.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpmime</artifactId>
+			<version>${httpmime.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>${commons-io.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-httpclient</groupId>
+			<artifactId>commons-httpclient</artifactId>
+			<version>${commons-httpclient.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpasyncclient</artifactId>
+			<version>${httpasyncclient.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>${commons-collections4.version}</version>
 		</dependency>
 	</dependencies>
 
