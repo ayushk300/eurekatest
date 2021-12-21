@@ -7,7 +7,9 @@ import org.codejudge.sb.dto.HTTPResponse;
 import org.codejudge.sb.dto.LogSummaryRequest;
 import org.codejudge.sb.dto.LogSummaryResponse;
 import org.codejudge.sb.service.ProcessLogService;
+import org.codejudge.sb.util.AppErrorCode;
 import org.codejudge.sb.util.CommonUtil;
+import org.codejudge.sb.util.CustomException;
 import org.codejudge.sb.util.HttpClientCustom;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -37,10 +39,10 @@ public class ProcessLogServiceImpl implements ProcessLogService {
     @Override
     public List<LogSummaryResponse> processLogs(LogSummaryRequest logSummaryRequest) {
         if(CollectionUtils.isEmpty(logSummaryRequest.getLogFiles())) {
-            throw new RuntimeException("Bad Request");
+            throw new CustomException(AppErrorCode.BAD_REQUEST, "Log files not provided");
         }
         if(Objects.isNull(logSummaryRequest.getParallelFileProcessingCount()) || logSummaryRequest.getParallelFileProcessingCount() > 15 || logSummaryRequest.getParallelFileProcessingCount() < 0) {
-            throw new RuntimeException("Bad Request");
+            throw new CustomException(AppErrorCode.BAD_REQUEST, "Parallel File Processing count must be greater than zero!");
         }
 
         Map<String, Map<String , ExceptionCount>> exceptionCountsGroupedByTime = new HashMap<>();
@@ -126,7 +128,7 @@ public class ProcessLogServiceImpl implements ProcessLogService {
         } else if(min > 45 && min < 60){
             return hour+":"+"30-"+hour+":"+"45";
         } else {
-            throw new RuntimeException("");
+            throw new CustomException(AppErrorCode.BAD_REQUEST, "time range invalid");
         }
     }
 }
