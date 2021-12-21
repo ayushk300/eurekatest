@@ -39,6 +39,7 @@ public class ProcessLogServiceImpl implements ProcessLogService {
 
     @Override
     public List<LogSummaryResponse> processLogs(LogSummaryRequest logSummaryRequest) {
+        log.info("processing logs , request : {}", logSummaryRequest);
         validate(logSummaryRequest);
         ExecutorService executors = Executors.newFixedThreadPool(logSummaryRequest.getParallelFileProcessingCount());
 
@@ -111,15 +112,17 @@ public class ProcessLogServiceImpl implements ProcessLogService {
         HTTPResponse httpResponse = HttpClientCustom.getInstance().httpGet(filePath, requestHeaders);
         String response = httpResponse.getPayloadString();
 
+
         Map<String, Map<String, ExceptionCount>> exceptionCountMap = new HashMap<>();
         List<String> logs = Arrays.asList(response.split("\r\n"));
+        log.info("file path {}, logs {}", filePath, logs);
         for(String logEntry : logs) {
             String timeStampString = logEntry.split(" ")[1];
             String exception = logEntry.split(" ")[2];
             SimpleDateFormat sdf = new SimpleDateFormat();
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
             String date = sdf.format(new Date(new Long(timeStampString)));
-            Integer hour = Integer.parseInt(date.split(" ")[1].split(":")[0]) + 12 ;
+            Integer hour = Integer.parseInt(date.split(" ")[1].split(":")[0]) + get24HourFormatNum(date.split(" ")[2]) ;
             Integer min =  Integer.parseInt(date.split(" ")[1].split(":")[1]);
 
             String range = getTimeRangeStr(hour, min);
@@ -133,15 +136,28 @@ public class ProcessLogServiceImpl implements ProcessLogService {
         return exceptionCountMap;
     }
 
+    private int get24HourFormatNum(String s) {
+        if("PM".equalsIgnoreCase(s)) {
+            return 12;
+        }
+        return 0;
+    }
+
+    private String getHour(Integer hour) {
+        if(hour < 10) {
+            return "0"+hour;
+        }
+        return ""+hour;
+    }
     private String getTimeRangeStr(Integer hour, Integer min) {
         if(min > 0 && min < 15){
-            return hour+":"+"00-"+hour+":"+"15";
+            return getHour(hour)+":"+"00-"+getHour(hour)+":"+"15";
         } else if(min > 15 && min < 30){
-            return hour+":"+"15-"+hour+":"+"30";
+            return getHour(hour)+":"+"15-"+getHour(hour)+":"+"30";
         } else if(min > 30 && min < 45){
-            return hour+":"+"30-"+hour+":"+"45";
+            return getHour(hour)+":"+"30-"+getHour(hour)+":"+"45";
         } else if(min > 45 && min < 60){
-            return hour+":"+"30-"+hour+":"+"45";
+            return getHour(hour)+":"+"30-"+getHour(hour)+":"+"45";
         } else {
             log.info("time range into extremes: hour: {}, mins: {}", hour, min);
             //throw new CustomException(AppErrorCode.BAD_REQUEST, "time range invalid");

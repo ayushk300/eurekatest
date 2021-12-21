@@ -20,7 +20,7 @@ public class AppController {
     private ProcessLogService processLogService;
 
     @ApiOperation("This is the hello world api")
-    @PostMapping("/log/summary")
+    @PostMapping("/api/process-logs/")
     public ResponseWrapper generateLogSummary(@Valid @RequestBody LogSummaryRequest logSummaryRequest) {
         return new ResponseWrapper(processLogService.processLogs(logSummaryRequest));
     }
