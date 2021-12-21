@@ -110,7 +110,7 @@ public class ProcessLogServiceImpl implements ProcessLogService {
     private Map<String, Map<String, ExceptionCount>> process(String filePath) {
         Map<String, String> requestHeaders = new HashMap<>();
         requestHeaders.put("Content-Type", "application/json");
-        HTTPResponse httpResponse = HttpClientCustom.getInstance().httpGet("https://codejudge-question-artifacts.s3.ap-south-1.amazonaws.com/q-120/log1.txt", requestHeaders);
+        HTTPResponse httpResponse = HttpClientCustom.getInstance().httpGet(filePath, requestHeaders);
         String response = httpResponse.getPayloadString();
 
         Map<String, Map<String, ExceptionCount>> exceptionCountMap = new HashMap<>();
