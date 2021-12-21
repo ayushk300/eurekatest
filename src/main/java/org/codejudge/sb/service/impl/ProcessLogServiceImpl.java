@@ -40,10 +40,8 @@ public class ProcessLogServiceImpl implements ProcessLogService {
     @Override
     public List<LogSummaryResponse> processLogs(LogSummaryRequest logSummaryRequest) {
         validate(logSummaryRequest);
-
-        Map<String, Map<String , ExceptionCount>> exceptionCountsGroupedByTime = new HashMap<>();
-
         ExecutorService executors = Executors.newFixedThreadPool(logSummaryRequest.getParallelFileProcessingCount());
+
         Map<String, Future<Map<String, Map<String, ExceptionCount>>>> futureMap = new HashMap<>();
         for(String logFilePath: logSummaryRequest.getLogFiles()) {
             futureMap.put(logFilePath, executors.submit(() -> process(logFilePath)));
