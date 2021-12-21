@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -82,7 +83,11 @@ public class ProcessLogServiceImpl implements ProcessLogService {
 
     private List<LogSummaryResponse> transformToResponse(Map<String, Map<String, ExceptionCount>> responseMap) {
         List<LogSummaryResponse> responses = new ArrayList<>();
-        for(Map.Entry<String, Map<String , ExceptionCount>> entry1 : responseMap.entrySet()) {
+        TreeMap<String, Map<String, ExceptionCount>> sorted = new TreeMap<>();
+
+        // Copy all data from hashMap into TreeMap
+        sorted.putAll(responseMap);
+        for(Map.Entry<String, Map<String , ExceptionCount>> entry1 : sorted.entrySet()) {
             List<ExceptionCount> logs = Lists.newArrayList(entry1.getValue().values());
             Collections.sort(logs);
             responses.add(new LogSummaryResponse(entry1.getKey(), logs));
