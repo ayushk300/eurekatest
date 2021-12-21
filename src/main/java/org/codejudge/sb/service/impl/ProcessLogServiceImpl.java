@@ -34,20 +34,15 @@ import java.util.concurrent.TimeoutException;
 @Service
 @Slf4j
 public class ProcessLogServiceImpl implements ProcessLogService {
-    private static Integer SECONDS_TO_WAIT_FOR_ENDPOINT_RESPONSE = 30;
+    private static Integer SECONDS_TO_WAIT_FOR_RESPONSE = 30;
 
     @Override
     public List<LogSummaryResponse> processLogs(LogSummaryRequest logSummaryRequest) {
-        if(CollectionUtils.isEmpty(logSummaryRequest.getLogFiles())) {
-            throw new CustomException(AppErrorCode.BAD_REQUEST, "Log files not provided");
-        }
-        if(Objects.isNull(logSummaryRequest.getParallelFileProcessingCount()) || logSummaryRequest.getParallelFileProcessingCount() > 15 || logSummaryRequest.getParallelFileProcessingCount() < 0) {
-            throw new CustomException(AppErrorCode.BAD_REQUEST, "Parallel File Processing count must be greater than zero!");
-        }
+        validate(logSummaryRequest);
 
         Map<String, Map<String , ExceptionCount>> exceptionCountsGroupedByTime = new HashMap<>();
 
-        ExecutorService executors = Executors.newFixedThreadPool(15);
+        ExecutorService executors = Executors.newFixedThreadPool(logSummaryRequest.getParallelFileProcessingCount());
         Map<String, Future<Map<String, Map<String, ExceptionCount>>>> futureMap = new HashMap<>();
         for(String logFilePath: logSummaryRequest.getLogFiles()) {
             futureMap.put(logFilePath, executors.submit(() -> process(logFilePath)));
@@ -56,7 +51,7 @@ public class ProcessLogServiceImpl implements ProcessLogService {
         Map<String, Map<String, ExceptionCount>> responseMap = new HashMap<>();
         try {
             for (Map.Entry<String, Future<Map<String, Map<String, ExceptionCount>>>> x : futureMap.entrySet()) {
-                Map<String, Map<String , ExceptionCount>> intermediateMap = x.getValue().get(SECONDS_TO_WAIT_FOR_ENDPOINT_RESPONSE, TimeUnit.SECONDS);
+                Map<String, Map<String , ExceptionCount>> intermediateMap = x.getValue().get(SECONDS_TO_WAIT_FOR_RESPONSE, TimeUnit.SECONDS);
                 mergeMaps(responseMap, intermediateMap);
             }
         } catch (InterruptedException | TimeoutException e) {
@@ -68,6 +63,21 @@ public class ProcessLogServiceImpl implements ProcessLogService {
             executors.shutdown();
         }
         return transformToResponse(responseMap);
+    }
+
+    private void validate(LogSummaryRequest logSummaryRequest) {
+        if(CollectionUtils.isEmpty(logSummaryRequest.getLogFiles())) {
+            throw new CustomException(AppErrorCode.BAD_REQUEST, "Log files not provided");
+        }
+        if(logSummaryRequest.getLogFiles().size() > 30) {
+            throw new CustomException(AppErrorCode.BAD_REQUEST, "No more than 30 log files can be processed together");
+        }
+        if(Objects.isNull(logSummaryRequest.getParallelFileProcessingCount()) || logSummaryRequest.getParallelFileProcessingCount() <= 0) {
+            throw new CustomException(AppErrorCode.BAD_REQUEST, "Parallel File Processing count must be greater than zero!");
+        }
+        if(logSummaryRequest.getParallelFileProcessingCount() > 15) {
+            throw new CustomException(AppErrorCode.BAD_REQUEST, "Parallel File Processing count must not be greater than 15");
+        }
     }
 
     private List<LogSummaryResponse> transformToResponse(Map<String, Map<String, ExceptionCount>> responseMap) {
@@ -87,7 +97,7 @@ public class ProcessLogServiceImpl implements ProcessLogService {
 
             for (Map.Entry<String , ExceptionCount> entry2 : entry1.getValue().entrySet()) {
                 responseTempMap.computeIfAbsent(entry2.getKey(), x -> new ExceptionCount(entry2.getKey(), 0))
-                        .incrementCount();
+                        .setCount(entry2.getValue().getCount());
             }
         }
     }
@@ -99,7 +109,7 @@ public class ProcessLogServiceImpl implements ProcessLogService {
         String response = httpResponse.getPayloadString();
 
         Map<String, Map<String, ExceptionCount>> exceptionCountMap = new HashMap<>();
-        List<String> logs = Arrays.asList(response.split("/n"));
+        List<String> logs = Arrays.asList(response.split("\r\n"));
         for(String logEntry : logs) {
             String timeStampString = logEntry.split(" ")[1];
             String exception = logEntry.split(" ")[2];
@@ -110,7 +120,9 @@ public class ProcessLogServiceImpl implements ProcessLogService {
             Integer min =  Integer.parseInt(date.split(" ")[1].split(":")[1]);
 
             String range = getTimeRangeStr(hour, min);
-
+            if(range.equalsIgnoreCase("invalid_time")) {
+                continue;
+            }
             exceptionCountMap.computeIfAbsent(range, x -> new HashMap<>())
                     .computeIfAbsent(exception, x-> new ExceptionCount(exception, 0))
                     .incrementCount();
@@ -128,7 +140,9 @@ public class ProcessLogServiceImpl implements ProcessLogService {
         } else if(min > 45 && min < 60){
             return hour+":"+"30-"+hour+":"+"45";
         } else {
-            throw new CustomException(AppErrorCode.BAD_REQUEST, "time range invalid");
+            log.info("time range into extremes: hour: {}, mins: {}", hour, min);
+            //throw new CustomException(AppErrorCode.BAD_REQUEST, "time range invalid");
+            return "invalid_time";
         }
     }
 }

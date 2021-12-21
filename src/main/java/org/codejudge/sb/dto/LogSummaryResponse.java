@@ -13,6 +13,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LogSummaryResponse {
-    private String timeStamp;
+    private String timestamp;
     private List<ExceptionCount> logs;
 }
