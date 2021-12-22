@@ -14,6 +14,7 @@ import org.codejudge.sb.util.HttpClientCustom;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -122,8 +123,9 @@ public class ProcessLogServiceImpl implements ProcessLogService {
             SimpleDateFormat sdf = new SimpleDateFormat();
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
             String date = sdf.format(new Date(new Long(timeStampString)));
-            Integer hour = Integer.parseInt(date.split(" ")[1].split(":")[0]) + get24HourFormatNum(date.split(" ")[2]) ;
-            Integer min =  Integer.parseInt(date.split(" ")[1].split(":")[1]);
+            String hourTime24  = get24HourFormatNum(date.split(" ")[1], date.split(" ")[2]);
+            Integer hour = Integer.parseInt(hourTime24.split(":")[0]) ;
+            Integer min =  Integer.parseInt(hourTime24.split(":")[1]) ;
 
             String range = getTimeRangeStr(hour, min);
             if(range.equalsIgnoreCase("invalid_time")) {
@@ -136,15 +138,20 @@ public class ProcessLogServiceImpl implements ProcessLogService {
         return exceptionCountMap;
     }
 
-    private int get24HourFormatNum(String s) {
-        if("PM".equalsIgnoreCase(s)) {
-            return 12;
+    private String get24HourFormatNum(String s, String s2) {
+        SimpleDateFormat displayFormat = new SimpleDateFormat("HH:mm");
+        SimpleDateFormat parseFormat = new SimpleDateFormat("hh:mm a");
+        Date date = null;
+        try {
+            date = parseFormat.parse(s + " "+ s2);
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
-        return 0;
+        return displayFormat.format(date);
     }
 
     private String getHour(Integer hour) {
-        if(hour < 10) {
+        if(hour < 10 && (""+hour).length() <=1) {
             return "0"+hour;
         }
         return ""+hour;
